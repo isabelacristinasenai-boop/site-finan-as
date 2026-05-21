@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Pro - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --bg-principal: #0d0e12;
+            --bg-card: rgba(30, 32, 44, 0.65);
+            --bg-sidebar: rgba(20, 22, 31, 0.85);
+            --roxo-neon: #9d4edd;
+            --roxo-brilho: rgba(157, 78, 221, 0.4);
+            --verde-esmeralda: #06d6a0;
+            --vermelho-saida: #ff4d6d;
+            --texto-principal: #f8f9fa;
+            --texto-secundario: #a0aec0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- LAYOUT & SIDEBAR --- */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-sidebar);
+            backdrop-filter: var(--glass-blur);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-left: 10px;
+        }
+
+        .logo i { color: var(--roxo-neon); }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--texto-secundario);
+            margin: 20px 0 10px 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--texto-secundario);
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            color: var(--texto-principal);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.02);
+        }
+
+        .nav-item.active {
+            color: var(--texto-principal);
+            background: rgba(157, 78, 221, 0.15);
+            border-left: 4px solid var(--roxo-neon);
+            box-shadow: 0 0 15px var(--roxo-brilho);
+        }
+
+        .sub-menu {
+            max-height: 200px;
+            overflow-y: auto;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+
+        /* Custom Scrollbar para Submenus estilo Power BI */
+        .sub-menu::-webkit-scrollbar { width: 4px; }
+        .sub-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .sub-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            color: var(--texto-secundario);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sub-item:hover, .sub-item.active {
+            color: var(--roxo-neon);
+            background: rgba(157, 78, 221, 0.05);
+        }
+
+        /* --- CONTEÚDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .header-dash {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-dash h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header-dash span {
+            color: var(--roxo-neon);
+        }
+
+        /* --- CARDS DE SÍNTESE --- */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(157, 78, 221, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--texto-secundario);
+            font-size: 0.9rem;
+        }
+
+        .card-value {
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+
+        .card.entradas .card-value { color: var(--verde-esmeralda); }
+        .card.saidas .card-value { color: var(--vermelho-saida); }
+
+        /* --- GRID DE DASHBOARD (GRÁFICOS E TABELAS) --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .section-box {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- FORMULÁRIOS --- */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--texto-secundario);
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--texto-principal);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--roxo-neon);
+            box-shadow: 0 0 10px var(--roxo-brilho);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--roxo-neon), #7b2cbf);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 20px var(--roxo-brilho);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--texto-principal);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+        /* --- TABELAS --- */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            color: var(--texto-secundario);
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 14px 12px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .valor-entrada { color: var(--verde-esmeralda); font-weight: 600; }
+        .valor-saida { color: var(--vermelho-saida); font-weight: 600; }
+
+        .badge-categoria {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* --- ANIMATION (FADE-IN EFFECT) --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in-row {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Classes Utilitárias de Filtro Dinâmico */
+        .hidden-section { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <i data-lucide="pie-chart"></i>
+            <span>Finanças BI</span>
+        </div>
+
+        <div class="nav-item active" id="menu-visao-geral" onclick="mudarAbas('geral')">
+            <i data-lucide="layout-dashboard"></i>
+            Visão Geral
+        </div>
+
+        <div class="menu-title">Meses</div>
+        <div class="sub-menu" id="menu-meses">
+            </div>
+
+        <div class="menu-title">Categorias</div>
+        <div class="sub-menu">
+            <div id="lista-categorias-menu">
+                </div>
+            <div class="sub-item" onclick="adicionarNovaCategoriaPrompt()" style="color: var(--roxo-neon); border-top: 1px solid var(--glass-border); margin-top: 5px;">
+                <i data-lucide="plus-circle"></i> Criar Categoria
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="header-dash">
+            <div>
+                <h1 id="titulo-contexto">Visão Geral</h1>
+                <p style="color: var(--texto-secundario); font-size: 0.9rem;" id="subtitulo-contexto">Dados consolidados de todo o período</p>
+            </div>
+            <div id="badge-filtro-ativo" style="background: rgba(157, 78, 221, 0.2); border: 1px solid var(--roxo-neon); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem;">
+                Filtro: Sem Filtros
+            </div>
+        </header>
+
+        <section class="cards-container">
+            <div class="card">
+                <div class="card-header">Saldo Total <i data-lucide="wallet" style="color: var(--roxo-neon)"></i></div>
+                <div class="card-value" id="card-saldo">R$ 0,00</div>
+            </div>
+            <div class="card entradas">
+                <div class="card-header">Total Entradas <i data-lucide="trending-up" style="color: var(--verde-esmeralda)"></i></div>
+                <div class="card-value" id="card-entradas">R$ 0,00</div>
+            </div>
+            <div class="card saidas">
+                <div class="card-header">Total Saídas <i data-lucide="trending-down" style="color: var(--vermelho-saida)"></i></div>
+                <div class="card-value" id="card-saidas">R$ 0,00</div>
+            </div>
+        </section>
+
+        <section id="area-visao-geral" class="dashboard-grid" style="margin-bottom: 25px;">
+            <div class="section-box" style="grid-column: span 2;">
+                <div class="section-title">Distribuição Mensal (Power BI Style)</div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="graficoMensal"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid">
+            
+            <section class="section-box">
+                <div class="section-title">Nova Transação</div>
+                <form id="form-transacao" onsubmit="salvarTransacao(event)">
+                    <div class="form-group">
+                        <label for="txt-nome">Descrição/Nome</label>
+                        <input type="text" id="txt-nome" class="form-control" placeholder="Ex: Salário, Aluguel..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="num-valor">Valor (R$)</label>
+                        <input type="number" step="0.01" id="num-valor" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-tipo">Tipo</label>
+                        <select id="sel-tipo" class="form-control" required>
+                            <option value="Entrada">Entrada (+)</option>
+                            <option value="Saída">Saída (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-mes">Mês Referência</label>
+                        <select id="sel-mes" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-categoria">Categoria</label>
+                        <select id="sel-categoria" class="form-control" required></select>
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Lançamento</button>
+                </form>
+            </section>
+
+            <section class="section-box">
+                <div class="section-title">
+                    <span>Registros de Lançamentos</span>
+                    <button class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Mês</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-transacoes">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // Banco de dados em memória inicializado com mockups para alimentar os gráficos de imediato
+        const mesesDoAno = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        
+        let categoriasAtivas = ["Moradia", "Aluguel", "Conta Água", "Internet", "Conta de Luz"];
+        
+        let transacoes = [
+            { id: 1, nome: "Salário Base", valor: 5500, tipo: "Entrada", mes: "Janeiro", categoria: "Moradia" },
+            { id: 2, nome: "Aluguel Standard", valor: 1200, tipo: "Saída", mes: "Janeiro", categoria: "Aluguel" },
+            { id: 3, nome: "Conta de Energia", valor: 220, tipo: "Saída", mes: "Janeiro", categoria: "Conta de Luz" },
+            { id: 4, nome: "Freelance Dev", valor: 2300, tipo: "Entrada", mes: "Fevereiro", categoria: "Internet" },
+            { id: 5, nome: "Mercado Mensal", valor: 450, tipo: "Saída", mes: "Fevereiro", categoria: "Moradia" }
+        ];
+
+        let filtroAtual = { tipo: 'geral', valor: null }; // geral, mes, categoria
+        let chartInstance = null;
+
+        // INICIALIZAÇÃO DO APP
+        document.addEventListener("DOMContentLoaded", () => {
+            renderizarEstruturaMenus();
+            renderizarSelectOptions();
+            processarDadosEAtualizarInterface();
+            lucide.createIcons(); // Ativa os ícones modernos
+        });
+
+        // CONSTRUÇÃO DINÂMICA DE SUBPASTAS/ABAS (UX/UI STYLE)
+        function renderizarEstruturaMenus() {
+            const menuMesesContainer = document.getElementById("menu-meses");
+            menuMesesContainer.innerHTML = mesesDoAno.map(m => `
+                <div class="sub-item item-mes-clique" data-mes="${m}" onclick="aplicarFiltro('mes', '${m}', this)">
+                    <i data-lucide="calendar"></i> ${m}
+                </div>
+            `).join('');
+
+            renderizarMenuCategoriasOnly();
+        }
+
+        function renderizarMenuCategoriasOnly() {
+            const menuCatContainer = document.getElementById("lista-categorias-menu");
+            menuCatContainer.innerHTML = categoriasAtivas.map(c => `
+                <div class="sub-item item-cat-clique" data-cat="${c}" onclick="aplicarFiltro('categoria', '${c}', this)">
+                    <i data-lucide="tag"></i> ${c}
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderizarSelectOptions() {
+            const selMes = document.getElementById("sel-mes");
+            const selCat = document.getElementById("sel-categoria");
+
+            selMes.innerHTML = mesesDoAno.map(m => `<option value="${m}">${m}</option>`).join('');
+            selCat.innerHTML = categoriasAtivas.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        // CONTROLADOR DE ADIÇÃO DE CATEGORIAS DINÂMICAS
+        function adicionarNovaCategoriaPrompt() {
+            const novaCat = prompt("Digite o nome da nova categoria de finanças:");
+            if (novaCat && novaCat.trim() !== "") {
+                const formatada = novaCat.trim();
+                if(!categoriasAtivas.includes(formatada)) {
+                    categoriasAtivas.push(formatada);
+                    renderizarMenuCategoriasOnly();
+                    renderizarSelectOptions();
+                } else {
+                    alert("Esta categoria já existe.");
+                }
+            }
+        }
+
+        // MOTOR DE FILTRAGEM (LÓGICA POWER BI)
+        function aplicarFiltro(tipo, valor, elemento) {
+            filtroAtual.tipo = tipo;
+            filtroAtual.valor = valor;
+
+            // Gerenciar Classes Ativas na UI
+            document.querySelectorAll('.nav-item, .sub-item').forEach(el => el.classList.remove('active'));
+            if(elemento) elemento.classList.add('active');
+
+            // Esconder área de gráficos coletivos se o filtro for muito específico, melhorando o foco visual
+            const areaVisaoGeral = document.getElementById("area-visao-geral");
+            if (tipo === 'geral') {
+                areaVisaoGeral.classList.remove("hidden-section");
+                document.getElementById("titulo-contexto").innerText = "Visão Geral";
+                document.getElementById("subtitulo-contexto").innerText = "Dados consolidados de todo o período";
+                document.getElementById("badge-filtro-ativo").innerText = `Filtro: Sem Filtros`;
+            } else {
+                areaVisaoGeral.classList.add("hidden-section");
+                document.getElementById("titulo-contexto").innerText = `${valor}`;
+                document.getElementById("subtitulo-contexto").innerText = `Exibindo lançamentos segmentados por ${tipo}`;
+                document.getElementById("badge-filtro-ativo").innerText = `Filtro: ${tipo} -> ${valor}`;
+            }
+
+            processarDadosEAtualizarInterface();
+        }
+
+        function limparFiltros() {
+            document.getElementById("menu-visao-geral").classList.add("active");
+            aplicarFiltro('geral', null, null);
+        }
+
+        // PROCESSAMENTO DE CÁLCULO E RENDERIZAÇÃO DE TABELA
+        function processarDadosEAtualizarInterface() {
+            // 1. Filtrar Transações conforme estado atual
+            let transacoesFiltradas = transacoes;
+            if (filtroAtual.tipo === 'mes') {
+                transacoesFiltradas = transacoes.filter(t => t.mes === filtroAtual.valor);
+            } else if (filtroAtual.tipo === 'categoria') {
+                transacoesFiltradas = transacoes.filter(t => t.categoria === filtroAtual.valor);
+            }
+
+            // 2. Calcular Métricas para os Cards
+            let entradas = 0;
+            let saidas = 0;
+
+            transacoesFiltradas.forEach(t => {
+                if(t.tipo === "Entrada") entradas += t.valor;
+                else saidas += t.valor;
+            });
+
+            let saldoTotal = entradas - saidas;
+
+            // Atualizar elementos visuais dos Cards
+            document.getElementById("card-entradas").innerText = formatarMoeda(entradas);
+            document.getElementById("card-saidas").innerText = formatarMoeda(saidas);
+            
+            const cardSaldoElement = document.getElementById("card-saldo");
+            cardSaldoElement.innerText = formatarMoeda(saldoTotal);
+            cardSaldoElement.style.color = saldoTotal >= 0 ? 'var(--verde-esmeralda)' : 'var(--vermelho-saida)';
+
+            // 3. Renderizar Linhas da Tabela
+            const tbody = document.getElementById("tbody-transacoes");
+            tbody.innerHTML = "";
+
+            if(transacoesFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--texto-secundario); padding:20px;">Nenhuma transação encontrada para este contexto.</td></tr>`;
+            } else {
+                transacoesFiltradas.forEach(t => {
+                    const tr = document.createElement("tr");
+                    tr.className = "fade-in-row";
+                    tr.innerHTML = `
+                        <td>${t.nome}</td>
+                        <td>${t.mes}</td>
+                        <td><span class="badge-categoria">${t.categoria}</span></td>
+                        <td class="${t.tipo === 'Entrada' ? 'valor-entrada' : 'valor-saida'}">
+                            ${t.tipo === 'Entrada' ? '+' : '-'} ${formatarMoeda(t.valor)}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // 4. Renderizar ou Atualizar Gráficos caso esteja na visão geral
+            if(filtroAtual.tipo === 'geral') {
+                renderizarGraficosBI();
+            }
+        }
+
+        // SUBMISSÃO DO FORMULÁRIO (JAVASCRIPT OPERACIONAL)
+        function salvarTransacao(e) {
+            e.preventDefault();
+
+            const nome = document.getElementById("txt-nome").value;
+            const valor = parseFloat(document.getElementById("num-valor").value);
+            const tipo = document.getElementById("sel-tipo").value;
+            const mes = document.getElementById("sel-mes").value;
+            const categoria = document.getElementById("sel-categoria").value;
+
+            const novaTransacao = {
+                id: Date.now(),
+                nome,
+                valor,
+                tipo,
+                mes,
+                categoria
+            };
+
+            // Insere na base de dados fictícia
+            transacoes.unshift(novaTransacao);
+
+            // Reseta campos do formulário
+            document.getElementById("txt-nome").value = "";
+            document.getElementById("num-valor").value = "";
+
+            // Volta para o mês inserido ou visão geral para que o usuário veja a animação fade-in
+            aplicarFiltro('mes', mes, null);
+            
+            // Procura o item do menu do mês correspondente para marcar como ativo visualmente
+            document.querySelectorAll('.item-mes-clique').forEach(el => {
+                if(el.getAttribute('data-mes') === mes) el.classList.add('active');
+            });
+        }
+
+        // FORMATAÇÃO AUXILIAR
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // MOTOR DE GRÁFICOS (CHART.JS CONFIGURADO COM A PALETA DO BRIEFING)
+        function renderizarGraficosBI() {
+            const ctx = document.getElementById('graficoMensal').getContext('2d');
+            
+            // Consolidação dos dados agrupados por mês
+            const dadosEntradasPorMes = Array(12).fill(0);
+            const dadosSaidasPorMes = Array(12).fill(0);
+
+            transacoes.forEach(t => {
+                const idxMes = mesesDoAno.indexOf(t.mes);
+                if(idxMes !== -1) {
+                    if(t.tipo === 'Entrada') dadosEntradasPorMes[idxMes] += t.valor;
+                    else dadosSaidasPorMes[idxMes] += t.valor;
+                }
+            });
+
+            if (chartInstance) {
+                chartInstance.destroy(); // Destrói instância anterior para evitar sobreposição de dados ao atualizar
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: mesesDoAno,
+                    datasets: [
+                        {
+                            label: 'Entradas (R$)',
+                            data: dadosEntradasPorMes,
+                            backgroundColor: '#06d6a0',
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Saídas (R$)',
+                            data: dadosSaidasPorMes,
+                            backgroundColor: '#ff4d6d',
+                            borderRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8f9fa' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#a0aec0' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#a0aec0' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Pro - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --bg-principal: #0d0e12;
+            --bg-card: rgba(30, 32, 44, 0.65);
+            --bg-sidebar: rgba(20, 22, 31, 0.85);
+            --roxo-neon: #9d4edd;
+            --roxo-brilho: rgba(157, 78, 221, 0.4);
+            --verde-esmeralda: #06d6a0;
+            --vermelho-saida: #ff4d6d;
+            --texto-principal: #f8f9fa;
+            --texto-secundario: #a0aec0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-principal);
+            color: var(--texto-principal);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- LAYOUT & SIDEBAR --- */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-sidebar);
+            backdrop-filter: var(--glass-blur);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding-left: 10px;
+        }
+
+        .logo i { color: var(--roxo-neon); }
+
+        .menu-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--texto-secundario);
+            margin: 20px 0 10px 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: var(--texto-secundario);
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            color: var(--texto-principal);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.02);
+        }
+
+        .nav-item.active {
+            color: var(--texto-principal);
+            background: rgba(157, 78, 221, 0.15);
+            border-left: 4px solid var(--roxo-neon);
+            box-shadow: 0 0 15px var(--roxo-brilho);
+        }
+
+        .sub-menu {
+            max-height: 200px;
+            overflow-y: auto;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+
+        /* Custom Scrollbar para Submenus estilo Power BI */
+        .sub-menu::-webkit-scrollbar { width: 4px; }
+        .sub-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .sub-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            color: var(--texto-secundario);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sub-item:hover, .sub-item.active {
+            color: var(--roxo-neon);
+            background: rgba(157, 78, 221, 0.05);
+        }
+
+        /* --- CONTEÚDO PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .header-dash {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-dash h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header-dash span {
+            color: var(--roxo-neon);
+        }
+
+        /* --- CARDS DE SÍNTESE --- */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(157, 78, 221, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--texto-secundario);
+            font-size: 0.9rem;
+        }
+
+        .card-value {
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+
+        .card.entradas .card-value { color: var(--verde-esmeralda); }
+        .card.saidas .card-value { color: var(--vermelho-saida); }
+
+        /* --- GRID DE DASHBOARD (GRÁFICOS E TABELAS) --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .section-box {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- FORMULÁRIOS --- */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--texto-secundario);
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--texto-principal);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--roxo-neon);
+            box-shadow: 0 0 10px var(--roxo-brilho);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--roxo-neon), #7b2cbf);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 20px var(--roxo-brilho);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--texto-principal);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+        /* --- TABELAS --- */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            color: var(--texto-secundario);
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 14px 12px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .valor-entrada { color: var(--verde-esmeralda); font-weight: 600; }
+        .valor-saida { color: var(--vermelho-saida); font-weight: 600; }
+
+        .badge-categoria {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* --- ANIMATION (FADE-IN EFFECT) --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in-row {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Classes Utilitárias de Filtro Dinâmico */
+        .hidden-section { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <i data-lucide="pie-chart"></i>
+            <span>Finanças BI</span>
+        </div>
+
+        <div class="nav-item active" id="menu-visao-geral" onclick="mudarAbas('geral')">
+            <i data-lucide="layout-dashboard"></i>
+            Visão Geral
+        </div>
+
+        <div class="menu-title">Meses</div>
+        <div class="sub-menu" id="menu-meses">
+            </div>
+
+        <div class="menu-title">Categorias</div>
+        <div class="sub-menu">
+            <div id="lista-categorias-menu">
+                </div>
+            <div class="sub-item" onclick="adicionarNovaCategoriaPrompt()" style="color: var(--roxo-neon); border-top: 1px solid var(--glass-border); margin-top: 5px;">
+                <i data-lucide="plus-circle"></i> Criar Categoria
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        
+        <header class="header-dash">
+            <div>
+                <h1 id="titulo-contexto">Visão Geral</h1>
+                <p style="color: var(--texto-secundario); font-size: 0.9rem;" id="subtitulo-contexto">Dados consolidados de todo o período</p>
+            </div>
+            <div id="badge-filtro-ativo" style="background: rgba(157, 78, 221, 0.2); border: 1px solid var(--roxo-neon); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem;">
+                Filtro: Sem Filtros
+            </div>
+        </header>
+
+        <section class="cards-container">
+            <div class="card">
+                <div class="card-header">Saldo Total <i data-lucide="wallet" style="color: var(--roxo-neon)"></i></div>
+                <div class="card-value" id="card-saldo">R$ 0,00</div>
+            </div>
+            <div class="card entradas">
+                <div class="card-header">Total Entradas <i data-lucide="trending-up" style="color: var(--verde-esmeralda)"></i></div>
+                <div class="card-value" id="card-entradas">R$ 0,00</div>
+            </div>
+            <div class="card saidas">
+                <div class="card-header">Total Saídas <i data-lucide="trending-down" style="color: var(--vermelho-saida)"></i></div>
+                <div class="card-value" id="card-saidas">R$ 0,00</div>
+            </div>
+        </section>
+
+        <section id="area-visao-geral" class="dashboard-grid" style="margin-bottom: 25px;">
+            <div class="section-box" style="grid-column: span 2;">
+                <div class="section-title">Distribuição Mensal (Power BI Style)</div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="graficoMensal"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid">
+            
+            <section class="section-box">
+                <div class="section-title">Nova Transação</div>
+                <form id="form-transacao" onsubmit="salvarTransacao(event)">
+                    <div class="form-group">
+                        <label for="txt-nome">Descrição/Nome</label>
+                        <input type="text" id="txt-nome" class="form-control" placeholder="Ex: Salário, Aluguel..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="num-valor">Valor (R$)</label>
+                        <input type="number" step="0.01" id="num-valor" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-tipo">Tipo</label>
+                        <select id="sel-tipo" class="form-control" required>
+                            <option value="Entrada">Entrada (+)</option>
+                            <option value="Saída">Saída (-)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-mes">Mês Referência</label>
+                        <select id="sel-mes" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sel-categoria">Categoria</label>
+                        <select id="sel-categoria" class="form-control" required></select>
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Lançamento</button>
+                </form>
+            </section>
+
+            <section class="section-box">
+                <div class="section-title">
+                    <span>Registros de Lançamentos</span>
+                    <button class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Mês</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-transacoes">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // Banco de dados em memória inicializado com mockups para alimentar os gráficos de imediato
+        const mesesDoAno = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        
+        let categoriasAtivas = ["Moradia", "Aluguel", "Conta Água", "Internet", "Conta de Luz"];
+        
+        let transacoes = [
+            { id: 1, nome: "Salário Base", valor: 5500, tipo: "Entrada", mes: "Janeiro", categoria: "Moradia" },
+            { id: 2, nome: "Aluguel Standard", valor: 1200, tipo: "Saída", mes: "Janeiro", categoria: "Aluguel" },
+            { id: 3, nome: "Conta de Energia", valor: 220, tipo: "Saída", mes: "Janeiro", categoria: "Conta de Luz" },
+            { id: 4, nome: "Freelance Dev", valor: 2300, tipo: "Entrada", mes: "Fevereiro", categoria: "Internet" },
+            { id: 5, nome: "Mercado Mensal", valor: 450, tipo: "Saída", mes: "Fevereiro", categoria: "Moradia" }
+        ];
+
+        let filtroAtual = { tipo: 'geral', valor: null }; // geral, mes, categoria
+        let chartInstance = null;
+
+        // INICIALIZAÇÃO DO APP
+        document.addEventListener("DOMContentLoaded", () => {
+            renderizarEstruturaMenus();
+            renderizarSelectOptions();
+            processarDadosEAtualizarInterface();
+            lucide.createIcons(); // Ativa os ícones modernos
+        });
+
+        // CONSTRUÇÃO DINÂMICA DE SUBPASTAS/ABAS (UX/UI STYLE)
+        function renderizarEstruturaMenus() {
+            const menuMesesContainer = document.getElementById("menu-meses");
+            menuMesesContainer.innerHTML = mesesDoAno.map(m => `
+                <div class="sub-item item-mes-clique" data-mes="${m}" onclick="aplicarFiltro('mes', '${m}', this)">
+                    <i data-lucide="calendar"></i> ${m}
+                </div>
+            `).join('');
+
+            renderizarMenuCategoriasOnly();
+        }
+
+        function renderizarMenuCategoriasOnly() {
+            const menuCatContainer = document.getElementById("lista-categorias-menu");
+            menuCatContainer.innerHTML = categoriasAtivas.map(c => `
+                <div class="sub-item item-cat-clique" data-cat="${c}" onclick="aplicarFiltro('categoria', '${c}', this)">
+                    <i data-lucide="tag"></i> ${c}
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderizarSelectOptions() {
+            const selMes = document.getElementById("sel-mes");
+            const selCat = document.getElementById("sel-categoria");
+
+            selMes.innerHTML = mesesDoAno.map(m => `<option value="${m}">${m}</option>`).join('');
+            selCat.innerHTML = categoriasAtivas.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        // CONTROLADOR DE ADIÇÃO DE CATEGORIAS DINÂMICAS
+        function adicionarNovaCategoriaPrompt() {
+            const novaCat = prompt("Digite o nome da nova categoria de finanças:");
+            if (novaCat && novaCat.trim() !== "") {
+                const formatada = novaCat.trim();
+                if(!categoriasAtivas.includes(formatada)) {
+                    categoriasAtivas.push(formatada);
+                    renderizarMenuCategoriasOnly();
+                    renderizarSelectOptions();
+                } else {
+                    alert("Esta categoria já existe.");
+                }
+            }
+        }
+
+        // MOTOR DE FILTRAGEM (LÓGICA POWER BI)
+        function aplicarFiltro(tipo, valor, elemento) {
+            filtroAtual.tipo = tipo;
+            filtroAtual.valor = valor;
+
+            // Gerenciar Classes Ativas na UI
+            document.querySelectorAll('.nav-item, .sub-item').forEach(el => el.classList.remove('active'));
+            if(elemento) elemento.classList.add('active');
+
+            // Esconder área de gráficos coletivos se o filtro for muito específico, melhorando o foco visual
+            const areaVisaoGeral = document.getElementById("area-visao-geral");
+            if (tipo === 'geral') {
+                areaVisaoGeral.classList.remove("hidden-section");
+                document.getElementById("titulo-contexto").innerText = "Visão Geral";
+                document.getElementById("subtitulo-contexto").innerText = "Dados consolidados de todo o período";
+                document.getElementById("badge-filtro-ativo").innerText = `Filtro: Sem Filtros`;
+            } else {
+                areaVisaoGeral.classList.add("hidden-section");
+                document.getElementById("titulo-contexto").innerText = `${valor}`;
+                document.getElementById("subtitulo-contexto").innerText = `Exibindo lançamentos segmentados por ${tipo}`;
+                document.getElementById("badge-filtro-ativo").innerText = `Filtro: ${tipo} -> ${valor}`;
+            }
+
+            processarDadosEAtualizarInterface();
+        }
+
+        function limparFiltros() {
+            document.getElementById("menu-visao-geral").classList.add("active");
+            aplicarFiltro('geral', null, null);
+        }
+
+        // PROCESSAMENTO DE CÁLCULO E RENDERIZAÇÃO DE TABELA
+        function processarDadosEAtualizarInterface() {
+            // 1. Filtrar Transações conforme estado atual
+            let transacoesFiltradas = transacoes;
+            if (filtroAtual.tipo === 'mes') {
+                transacoesFiltradas = transacoes.filter(t => t.mes === filtroAtual.valor);
+            } else if (filtroAtual.tipo === 'categoria') {
+                transacoesFiltradas = transacoes.filter(t => t.categoria === filtroAtual.valor);
+            }
+
+            // 2. Calcular Métricas para os Cards
+            let entradas = 0;
+            let saidas = 0;
+
+            transacoesFiltradas.forEach(t => {
+                if(t.tipo === "Entrada") entradas += t.valor;
+                else saidas += t.valor;
+            });
+
+            let saldoTotal = entradas - saidas;
+
+            // Atualizar elementos visuais dos Cards
+            document.getElementById("card-entradas").innerText = formatarMoeda(entradas);
+            document.getElementById("card-saidas").innerText = formatarMoeda(saidas);
+            
+            const cardSaldoElement = document.getElementById("card-saldo");
+            cardSaldoElement.innerText = formatarMoeda(saldoTotal);
+            cardSaldoElement.style.color = saldoTotal >= 0 ? 'var(--verde-esmeralda)' : 'var(--vermelho-saida)';
+
+            // 3. Renderizar Linhas da Tabela
+            const tbody = document.getElementById("tbody-transacoes");
+            tbody.innerHTML = "";
+
+            if(transacoesFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--texto-secundario); padding:20px;">Nenhuma transação encontrada para este contexto.</td></tr>`;
+            } else {
+                transacoesFiltradas.forEach(t => {
+                    const tr = document.createElement("tr");
+                    tr.className = "fade-in-row";
+                    tr.innerHTML = `
+                        <td>${t.nome}</td>
+                        <td>${t.mes}</td>
+                        <td><span class="badge-categoria">${t.categoria}</span></td>
+                        <td class="${t.tipo === 'Entrada' ? 'valor-entrada' : 'valor-saida'}">
+                            ${t.tipo === 'Entrada' ? '+' : '-'} ${formatarMoeda(t.valor)}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // 4. Renderizar ou Atualizar Gráficos caso esteja na visão geral
+            if(filtroAtual.tipo === 'geral') {
+                renderizarGraficosBI();
+            }
+        }
+
+        // SUBMISSÃO DO FORMULÁRIO (JAVASCRIPT OPERACIONAL)
+        function salvarTransacao(e) {
+            e.preventDefault();
+
+            const nome = document.getElementById("txt-nome").value;
+            const valor = parseFloat(document.getElementById("num-valor").value);
+            const tipo = document.getElementById("sel-tipo").value;
+            const mes = document.getElementById("sel-mes").value;
+            const categoria = document.getElementById("sel-categoria").value;
+
+            const novaTransacao = {
+                id: Date.now(),
+                nome,
+                valor,
+                tipo,
+                mes,
+                categoria
+            };
+
+            // Insere na base de dados fictícia
+            transacoes.unshift(novaTransacao);
+
+            // Reseta campos do formulário
+            document.getElementById("txt-nome").value = "";
+            document.getElementById("num-valor").value = "";
+
+            // Volta para o mês inserido ou visão geral para que o usuário veja a animação fade-in
+            aplicarFiltro('mes', mes, null);
+            
+            // Procura o item do menu do mês correspondente para marcar como ativo visualmente
+            document.querySelectorAll('.item-mes-clique').forEach(el => {
+                if(el.getAttribute('data-mes') === mes) el.classList.add('active');
+            });
+        }
+
+        // FORMATAÇÃO AUXILIAR
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // MOTOR DE GRÁFICOS (CHART.JS CONFIGURADO COM A PALETA DO BRIEFING)
+        function renderizarGraficosBI() {
+            const ctx = document.getElementById('graficoMensal').getContext('2d');
+            
+            // Consolidação dos dados agrupados por mês
+            const dadosEntradasPorMes = Array(12).fill(0);
+            const dadosSaidasPorMes = Array(12).fill(0);
+
+            transacoes.forEach(t => {
+                const idxMes = mesesDoAno.indexOf(t.mes);
+                if(idxMes !== -1) {
+                    if(t.tipo === 'Entrada') dadosEntradasPorMes[idxMes] += t.valor;
+                    else dadosSaidasPorMes[idxMes] += t.valor;
+                }
+            });
+
+            if (chartInstance) {
+                chartInstance.destroy(); // Destrói instância anterior para evitar sobreposição de dados ao atualizar
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: mesesDoAno,
+                    datasets: [
+                        {
+                            label: 'Entradas (R$)',
+                            data: dadosEntradasPorMes,
+                            backgroundColor: '#06d6a0',
+                            borderRadius: 5
+                        },
+                        {
+                            label: 'Saídas (R$)',
+                            data: dadosSaidasPorMes,
+                            backgroundColor: '#ff4d6d',
+                            borderRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f8f9fa' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#a0aec0' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#a0aec0' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
